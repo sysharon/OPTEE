@@ -416,6 +416,78 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		return TEE_SUCCESS;
 
 	}
+	// Cps_decrypt_raw
+
+	static TEE_Result Cps_decrypt_raw(uint32_t param_types,
+		TEE_Param params[4])
+	{
+		char* src = NULL, *tmp = NULL;
+		char out[1024] = {0};
+		uint32_t sz,srcSz;
+		TEE_ObjectHandle outcome;
+		TEE_Attribute attr;
+		TEE_ObjectInfo KeyInfo;
+		TEE_OperationInfo operationInfo;
+		TEE_Result res;
+		params = params;
+		param_types = param_types;
+
+		IMSG("***********CPS_VIEW_RAW**************\n");
+		//TEE_Attribute attr = {0};
+		tmp = readKeyObj(myStrlen(key));
+		if (tmp == NULL){
+			EMSG("You did not init the key");
+			return TEE_SUCCESS;
+		}
+		myMemcpy(key,tmp,myStrlen(key));
+
+		res = TEE_AllocateOperation(&decipher, TEE_ALG_AES_CBC_NOPAD, TEE_MODE_DECRYPT, 128);
+		IMSG("Alloc object cipher %x\n",res);
+		IMSG("iv: %s", iv);
+		IMSG("key %s", key);
+		res = TEE_AllocateTransientObject(TEE_TYPE_AES, 128, &outcome);
+		IMSG("alloc Transient object %x\n",res);
+		TEE_InitRefAttribute(&attr, TEE_ATTR_SECRET_VALUE, key, 16);
+		IMSG("TEE_InitRefAttribute %x\n",res);
+		res = TEE_PopulateTransientObject(outcome, &attr, 1);
+		IMSG("populate transient object %x\n",res);
+		TEE_GetObjectInfo(outcome, &KeyInfo);
+		DMSG("%s: maxObjectSize = (%08x) objectSize = (%08x).",__func__, KeyInfo.maxObjectSize, KeyInfo.objectSize);
+		TEE_GetOperationInfo(decipher, &operationInfo);
+		IMSG("Alloc object cipher %x\n",res);
+		res = TEE_SetOperationKey(decipher, outcome);
+		DMSG("%s: maxObjectSize = (%08x) objectSize = (%08x).",__func__, operationInfo.maxKeySize, operationInfo.keySize);
+		IMSG("Decipher TEE_SetOperationKey %x\n",res);
+		TEE_CipherInit(decipher, iv, 16);
+		IMSG("decipher is ready");
+
+
+		src = TEE_Malloc(params[0].memref.size, 0);
+		srcSz = params[0].memref.size;
+		srcSz = srcSz;
+		TEE_MemMove(src, params[0].memref.buffer, params[0].memref.size);
+		IMSG ("%s\n",src);
+		sz = 1024	;
+		res = TEE_CipherDoFinal(decipher,src, srcSz, out, &sz);
+		IMSG("sz: %d",sz);
+		IMSG("\n\n\n*****************");
+		// IMSG("decrypted final: %s", out);
+		for(int i=0;i<myStrlen(out);i++)	IMSG("%x ",out[i]);
+		IMSG("*****************\n\n\n");
+
+		IMSG("res: %x\n",res);
+
+		TEE_MemMove(params[0].memref.buffer, out, myStrlen(out)+1);
+		params[0].memref.size= myStrlen((char*)out)+1;
+
+		return TEE_SUCCESS;
+
+	}
+
+
+
+
+
 
 
 
@@ -462,6 +534,8 @@ TEE_Result TA_InvokeCommandEntryPoint(void __maybe_unused *sess_ctx,
 		return Cps_encrypt(param_types, params);
 	case CPS_VIEW:
 		return Cps_decrypt(param_types, params);
+		case CPS_VIEW_RAW:
+		return Cps_decrypt_raw(param_types, params);
 	default:
 		return TEE_ERROR_BAD_PARAMETERS;
 	}

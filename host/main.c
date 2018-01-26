@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
 	char buff[256] = {0};
 	char* buff2=NULL;
 	TEEC_SharedMemory keymsg, msg;
+	bool raw = false;
 	printf("you have %d parameters!\n",argc);
 
 	/* Initialize a context connecting us to the TEE */
@@ -168,8 +169,12 @@ if (strcmp(argv[1], "CPS_PROTECT")==0){
 
 
  //----------------------------------------------------------------------------//
-
  if (strcmp(argv[1], "CPS_VIEW")==0){
+	 if(argc == 3)
+	 if(strcmp(argv[3], "raw") ==0) raw = true;
+
+if(op.params[1].value.a != -1){
+
 	 buff2 = fileToBuffer(argv[2]);
  	size_t toadd = 16 - strlen(buff2) % 16;
  	// printf("old size of buff2: %d \n", (int) strlen(buff2));
@@ -188,11 +193,19 @@ if (strcmp(argv[1], "CPS_PROTECT")==0){
  	op.params[0].memref.parent = &msg;
  	op.params[0].memref.offset = 0;
  	op.params[0].memref.size = msg.size;
+
  printf("Decrypt: ");
+ if(raw)
+ res = TEEC_InvokeCommand(&sess, CPS_VIEW_RAW, &op,&err_origin);//TA_DECRYPT_BUFFER
+ else
  res = TEEC_InvokeCommand(&sess, CPS_VIEW, &op,&err_origin);//TA_DECRYPT_BUFFER
+
  if (res != TEEC_SUCCESS)
 	 errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
 		 res, err_origin);
+}
+else
+	printf("For CPS_VIEW -> optee_crypto CPS_VIEW [file] [view type raw/asci]\n");
 }
 
 
