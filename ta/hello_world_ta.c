@@ -168,10 +168,10 @@ int checkIfPersistentObjectExists(void){
 							       (void *)objID, objID_len, flags, &object);
 	if (ret != TEE_SUCCESS)
 	{
-		EMSG("Key already Exists.\n");
-		return 0;
+		EMSG("Key Not Exists.\n");
+		return -1;
 	}
-	return -1;
+	return 0;
 }
 
 int createKeyObj(char buffer[16], size_t strLen ){
@@ -236,10 +236,12 @@ static TEE_Result Cps_init(uint32_t param_types,
 		uint32_t hSize = 20;
 		int response;
 
-		if(checkIfPersistentObjectExists() == -1) {
-			DMSG("********KEY ALREADY EXISTS!!!**********");
-			return TEE_SUCCESS;
-		}
+		//0 > exists
+		//-1 > not exist!
+		// if(checkIfPersistentObjectExists() == 0) {
+		// 	DMSG("********ENCRYPT -> KEY  EXISTS!!!**********");
+		// 	return TEE_SUCCESS;
+		// }
 		//size_t HSize = 40;
 		IMSG("***CPS_INIT***\n");
 		param_types = param_types;
@@ -300,10 +302,19 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		TEE_ObjectInfo KeyInfo = {0};
 		TEE_OperationInfo operationInfo = {0};
 		param_types = param_types;
-		tmp = readKeyObj(myStrlen(key));
-		IMSG("***CPS_ENCRYPT***\n");
 
-		if(checkIfPersistentObjectExists() == -1)	return TEE_SUCCESS;
+
+		IMSG("***CPS_ENCRYPT***\n");
+	// 	if(checkIfPersistentObjectExists() == -1)	{
+ // 			IMSG("Cant Encrypt! there is no key!");
+ // 			return TEE_SUCCESS;
+ // }
+
+		tmp = readKeyObj(myStrlen(key));
+
+
+		//0 > exists
+		//-1 > not exist!
 
 		if (tmp == NULL){
 			EMSG("You did not init the key");
@@ -355,7 +366,7 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		params = params;
 		param_types = param_types;
 
-		IMSG("Cps_decrypt\n");
+		IMSG("***********CPS_VIEW**************\n");
 		//TEE_Attribute attr = {0};
 		tmp = readKeyObj(myStrlen(key));
 		if (tmp == NULL){
