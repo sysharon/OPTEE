@@ -18,6 +18,8 @@ static size_t objID_len = 64;
 
 char* readKeyObj (size_t strLen);
 int createKeyObj(char buffer[16], size_t strLen );
+int checkIfPersistentObjectExists(void);
+
 
 
 /*
@@ -157,6 +159,20 @@ done:
 	return (char*) p;
 }
 
+int checkIfPersistentObjectExists(void){
+		TEE_Result ret;
+		TEE_ObjectHandle object = (TEE_ObjectHandle)NULL;
+		uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE;
+
+	ret = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
+							       (void *)objID, objID_len, flags, &object);
+	if (ret != TEE_SUCCESS)
+	{
+		EMSG("Key already Exists.\n");
+		return 0;
+	}
+	return -1;
+}
 
 int createKeyObj(char buffer[16], size_t strLen ){
 	TEE_Result ret;
@@ -220,8 +236,12 @@ static TEE_Result Cps_init(uint32_t param_types,
 		uint32_t hSize = 20;
 		int response;
 
+		if(checkIfPersistentObjectExists() == -1) {
+			DMSG("********KEY ALREADY EXISTS!!!**********");
+			return TEE_SUCCESS;
+		}
 		//size_t HSize = 40;
-		IMSG("***CPS_ENCRYPT***\n");
+		IMSG("***CPS_INIT***\n");
 		param_types = param_types;
 		src = TEE_Malloc(params[0].memref.size, 0);
 		TEE_MemMove(src, params[0].memref.buffer, params[0].memref.size);
@@ -281,7 +301,10 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		TEE_OperationInfo operationInfo = {0};
 		param_types = param_types;
 		tmp = readKeyObj(myStrlen(key));
-		IMSG("***CPS_INIT***\n");
+		IMSG("***CPS_ENCRYPT***\n");
+
+		if(checkIfPersistentObjectExists() == -1)	return TEE_SUCCESS;
+
 		if (tmp == NULL){
 			EMSG("You did not init the key");
 			return TEE_SUCCESS;
@@ -366,12 +389,14 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		srcSz = params[0].memref.size;
 		srcSz = srcSz;
 		TEE_MemMove(src, params[0].memref.buffer, params[0].memref.size);
-		DMSG ("I will handle the message");
 		IMSG ("%s\n",src);
 		sz = 1024	;
 		res = TEE_CipherDoFinal(decipher,src, srcSz, out, &sz);
 		IMSG("sz: %d",sz);
+		IMSG("\n\n\n*****************");
 		IMSG("decrypted final: %s", out);
+		IMSG("*****************\n\n\n");
+
 		IMSG("res: %x\n",res);
 
 		TEE_MemMove(params[0].memref.buffer, out, myStrlen(out)+1);
