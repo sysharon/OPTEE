@@ -16,7 +16,7 @@ static char objID[] = "96c5d1b260aa4de30fedaf67e5b9227613abebff172a2b4e949994b8e
 static size_t objID_len = 64;
 
 
-char* readKeyObj (size_t strLen);
+char* getKeyIfExists (size_t strLen);
 int createKeyObj(char buffer[16], size_t strLen );
 int checkIfPersistentObjectExists(void);
 
@@ -122,7 +122,7 @@ static void myMemset(void* dest, char b, unsigned len)
 		((char*)dest)[i] = b;
 }
 
-char* readKeyObj (size_t strLen){
+char* getKeyIfExists (size_t strLen){
 	uint32_t flags = TEE_DATA_FLAG_ACCESS_WRITE_META | TEE_DATA_FLAG_ACCESS_READ | TEE_DATA_FLAG_ACCESS_WRITE;
 	TEE_ObjectHandle object = (TEE_ObjectHandle)NULL;
 	TEE_ObjectInfo info;
@@ -284,8 +284,6 @@ static TEE_Result Cps_init(uint32_t param_types,
 		else{
 			EMSG("Cannot create key file");
 		}
-
-
 		return TEE_SUCCESS;
 	}
 
@@ -310,7 +308,7 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
  // 			return TEE_SUCCESS;
  // }
 
-		tmp = readKeyObj(myStrlen(key));
+		tmp = getKeyIfExists(myStrlen(key));
 
 
 		//0 > exists
@@ -368,7 +366,7 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 
 		IMSG("***********CPS_VIEW**************\n");
 		//TEE_Attribute attr = {0};
-		tmp = readKeyObj(myStrlen(key));
+		tmp = getKeyIfExists(myStrlen(key));
 		if (tmp == NULL){
 			EMSG("You did not init the key");
 			return TEE_SUCCESS;
@@ -434,7 +432,7 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 
 		IMSG("***********CPS_VIEW_RAW**************\n");
 		//TEE_Attribute attr = {0};
-		tmp = readKeyObj(myStrlen(key));
+		tmp = getKeyIfExists(myStrlen(key));
 		if (tmp == NULL){
 			EMSG("You did not init the key");
 			return TEE_SUCCESS;

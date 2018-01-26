@@ -123,10 +123,7 @@ if (strcmp(argv[1], "CPS_INIT") == 0){
 	res = TEEC_InvokeCommand(&sess, CPS_INIT, &op,
 				 &err_origin);
 	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
-			res, err_origin);
-	// writeFile(argv[2], "hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	printf("Init is DONE!\n");
+		errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",res, err_origin);
 	TEEC_ReleaseSharedMemory(&keymsg);
 }
 
@@ -170,10 +167,9 @@ if (strcmp(argv[1], "CPS_PROTECT")==0){
 
  //----------------------------------------------------------------------------//
  if (strcmp(argv[1], "CPS_VIEW")==0){
-	 if(argc == 3)
+	 if(argc == 4)
 	 if(strcmp(argv[3], "raw") ==0) raw = true;
 
-if(op.params[1].value.a != -1){
 
 	 buff2 = fileToBuffer(argv[2]);
  	size_t toadd = 16 - strlen(buff2) % 16;
@@ -203,7 +199,7 @@ if(op.params[1].value.a != -1){
  if (res != TEEC_SUCCESS)
 	 errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
 		 res, err_origin);
-}
+
 else
 	printf("For CPS_VIEW -> optee_crypto CPS_VIEW [file] [view type raw/asci]\n");
 }
