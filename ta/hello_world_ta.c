@@ -355,6 +355,8 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 	{
 		char* src = NULL, *tmp = NULL;
 		char out[1024] = {0};
+		char strr[1024]={0};
+		
 		uint32_t sz,srcSz;
 		TEE_ObjectHandle outcome;
 		TEE_Attribute attr;
@@ -403,6 +405,15 @@ static TEE_Result Cps_encrypt(uint32_t param_types,
 		res = TEE_CipherDoFinal(decipher,src, srcSz, out, &sz);
 		IMSG("sz: %d",sz);
 		IMSG("\n\n\n*****************");
+		for(int i=0;i<myStrlen(out);i++){
+			// if(out[i]>0x80) IMSG("?");
+			// else IMSG("%c",out[i]);
+
+			if(out[i]>0x80) strr[i]='?';
+			else strr[i]=out[i];
+		}
+		IMSG("decrypted final strr!: %s", strr);
+
 		IMSG("decrypted final: %s", out);
 		IMSG("*****************\n\n\n");
 

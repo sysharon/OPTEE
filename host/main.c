@@ -15,6 +15,41 @@ char* Resize(size_t newSize, char* palabra, size_t palabra_size){
 		memset(&newArray[palabra_size],' ', newSize-palabra_size);
 		return newArray;
 }
+//
+// char *getFileContent(char* path){
+// // FILE *f = fopen("textfile.txt", "rb");
+// // fseek(f, 0, SEEK_END);
+// // long fsize = ftell(f);
+// // fseek(f, 0, SEEK_SET);  //same as rewind(f);
+// //
+// // char *string = malloc(fsize + 1);
+// // fread(string, fsize, 1, f);
+// // fclose(f);
+// //
+// // string[fsize] = 0;
+// // char *arry = (char *)malloc(30000 * sizeof(char));
+//
+// char arry[30000]={0};
+// char c;
+// FILE *fp = fopen(path, "rb");
+// int i=0;
+// if(!fp)return NULL;
+// while(c = getchar()!=EOF ){
+// 	arry[i] = c;
+// 	i++;
+// }
+// return arry;
+//
+//
+//
+// }
+//
+
+
+
+
+
+
 
 void writeFile(char* filePath, char* buffer){
 FILE *fptr;
@@ -53,6 +88,16 @@ char* fileToBuffer(char* filePath){
 	fclose(fp);
 	return buffer;
 }
+bool fileExist(char *path){
+	FILE *fp = fopen(path,"r");
+	if(fp)	{
+		fclose(fp);
+		// printf("file exist!");
+		return true;
+	}
+	// printf("file not exist!");
+		return false;
+}
 
 
 int main(int argc, char *argv[])
@@ -67,7 +112,8 @@ int main(int argc, char *argv[])
 	char* buff2=NULL;
 	TEEC_SharedMemory keymsg, msg;
 	bool raw = false;
-	printf("you have %d parameters!\n",argc);
+	// printf("you have %d parameters!\n",argc);
+	for(int i=0;i<argc;i++)	printf("argv[%d] == %s\n",i,argv[i]);
 
 	/* Initialize a context connecting us to the TEE */
 	res = TEEC_InitializeContext(NULL, &ctx);
@@ -104,7 +150,8 @@ int main(int argc, char *argv[])
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_WHOLE, TEEC_NONE,
 					 TEEC_NONE, TEEC_NONE);
 
-if (strcmp(argv[1], "CPS_INIT") == 0){
+if (strcmp(argv[1], "init") == 0){
+	printf("******init******\n");
 	strcpy(buff,argv[2]);
 	keymsg.buffer = buff;
 		if (!keymsg.buffer){
@@ -131,7 +178,8 @@ if (strcmp(argv[1], "CPS_INIT") == 0){
 
 //----------------------------------------------------------------------------//
 
-if (strcmp(argv[1], "CPS_PROTECT")==0){
+else if (strcmp(argv[1], "encrypt")==0){
+	printf("******encrypt******\n");
 	buff2 = fileToBuffer(argv[2]);
 	size_t toadd = 16 - strlen(buff2) % 16;
 	printf("old size of buff2: %d \n", (int) strlen(buff2));
@@ -166,12 +214,15 @@ if (strcmp(argv[1], "CPS_PROTECT")==0){
 
 
  //----------------------------------------------------------------------------//
- if (strcmp(argv[1], "CPS_VIEW")==0){
-	 if(argc == 4)
-	 if(strcmp(argv[3], "raw") ==0) raw = true;
+ else{
+	 printf("******view******\n");
+	 if(fileExist(argv[1])){
+		 printf("file does exist\n");
+
+	 if(strcmp(argv[2], "raw") ==0) raw = true;
 
 
-	 buff2 = fileToBuffer(argv[2]);
+	 buff2 = fileToBuffer(argv[1]);
  	size_t toadd = 16 - strlen(buff2) % 16;
  	// printf("old size of buff2: %d \n", (int) strlen(buff2));
  	char* newBuff = Resize(strlen(buff2)+toadd, buff2, strlen(buff2));
@@ -191,10 +242,15 @@ if (strcmp(argv[1], "CPS_PROTECT")==0){
  	op.params[0].memref.size = msg.size;
 
  printf("Decrypt: ");
- if(raw)
+ if(raw){
+	 printf("Invoking CPS_VIEW_RAW\n");
  res = TEEC_InvokeCommand(&sess, CPS_VIEW_RAW, &op,&err_origin);//TA_DECRYPT_BUFFER
- else
+}
+ else{
+	 printf("Invoking CPS_VIEW\n");
+
  res = TEEC_InvokeCommand(&sess, CPS_VIEW, &op,&err_origin);//TA_DECRYPT_BUFFER
+}
 
  if (res != TEEC_SUCCESS)
 	 errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
@@ -204,6 +260,7 @@ else
 	printf("For CPS_VIEW -> optee_crypto CPS_VIEW [file] [view type raw/asci]\n");
 }
 
+}
 
 
   TEEC_ReleaseSharedMemory(&msg);
